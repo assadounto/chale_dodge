@@ -1,9 +1,13 @@
+import type { ArenaId } from "./arenas";
 export const WIDTH = 360;
 export const HEIGHT = 600;
 export const DURATION = 60;
+export type HazardKind = "tyre" | "slipper" | "ball" | "tomato" | "crate";
 export type Hazard = {
   id: number;
-  kind: "tyre" | "slipper" | "ball";
+  kind: HazardKind;
+  entered?: boolean;
+  bounces?: number;
   x: number;
   y: number;
   vx: number;
@@ -15,6 +19,7 @@ export type Hazard = {
   rewarded: boolean;
 };
 export type World = {
+  arena: ArenaId;
   x: number;
   y: number;
   targetX: number;
@@ -38,8 +43,9 @@ export type World = {
 };
 export const clamp = (v: number, min: number, max: number) =>
   Math.max(min, Math.min(max, v));
-export function createWorld(): World {
+export function createWorld(arena: ArenaId = "compound"): World {
   return {
+    arena,
     x: 180,
     y: 450,
     targetX: 180,
@@ -67,11 +73,12 @@ export function aim(w: World, x: number, y: number) {
   w.targetY = clamp(y, 95, HEIGHT - 40);
 }
 function spawn(w: World, random: () => number) {
-  const kind = (["tyre", "slipper", "ball"] as const)[Math.floor(random() * 3)];
-  const side = Math.floor(random() * 3);
+  const kinds: HazardKind[] = w.arena === "market" ? ["tomato", "crate", "tyre"] : ["tyre", "slipper", "ball"];
+  const kind = kinds[Math.floor(random() * kinds.length)];
+  const side = Math.floor(random() * (kind === "crate" ? 2 : 3));
   const x =
     side === 0 ? -25 : side === 1 ? WIDTH + 25 : 35 + random() * (WIDTH - 70);
-  const y = side === 2 ? -25 : 130 + random() * 300;
+  const y = kind === "crate" ? [170, 290, 410, 520][Math.floor(random() * 4)] : side === 2 ? -25 : 130 + random() * 300;
   const angle = Math.atan2(w.y - y, w.x - x) + (random() - 0.5) * 0.5;
   const speed = 100 + w.elapsed * 2 + (kind === "slipper" ? 35 : 0);
   w.hazards.push({
@@ -79,11 +86,13 @@ function spawn(w: World, random: () => number) {
     kind,
     x,
     y,
-    vx: Math.cos(angle) * speed,
-    vy: Math.sin(angle) * speed,
-    radius: kind === "tyre" ? 20 : kind === "ball" ? 14 : 13,
+    vx: kind === "crate" ? (side === 0 ? 1 : -1) * (80 + w.elapsed) : Math.cos(angle) * speed,
+    vy: kind === "crate" ? 0 : Math.sin(angle) * speed,
+    radius: kind === "crate" ? 23 : kind === "tyre" ? 20 : kind === "ball" || kind === "tomato" ? 14 : 13,
+    entered: false,
+    bounces: kind === "tomato" ? 2 : 0,
     age: 0,
-    warned: 0.65,
+    warned: kind === "crate" ? 1 : 0.65,
     closest: Infinity,
     rewarded: false,
   });
@@ -111,18 +120,33 @@ export function step(w: World, delta: number, random = Math.random) {
   }
   w.spawnIn -= dt;
   if (w.spawnIn <= 0) {
-    spawn(w, random);
-    w.spawnIn = Math.max(0.35, 1.05 - w.elapsed * 0.012);
+    if (w.arena !== "market" || w.hazards.length < 12) spawn(w, random);
+    w.spawnIn = w.arena === "market" ? Math.max(0.55, 1.3 - w.elapsed * 0.01) : Math.max(0.35, 1.05 - w.elapsed * 0.012);
   }
   for (const h of w.hazards) {
     h.age += dt;
     if (h.age < h.warned) continue;
     h.x += h.vx * dt;
     h.y += h.vy * dt;
+    if (h.kind === "tomato") {
+      if (!h.entered && h.x >= 20 && h.x <= WIDTH - 20 && h.y >= 85 && h.y <= HEIGHT - 20) h.entered = true;
+      if (h.entered && (h.bounces ?? 0) > 0) {
+        const horizontal = (h.x < 20 && h.vx < 0) || (h.x > WIDTH - 20 && h.vx > 0);
+        const vertical = (h.y < 85 && h.vy < 0) || (h.y > HEIGHT - 20 && h.vy > 0);
+        if (horizontal || vertical) {
+          if (horizontal) { h.vx *= -1; h.x = clamp(h.x, 20, WIDTH - 20); }
+          if (vertical) { h.vy *= -1; h.y = clamp(h.y, 85, HEIGHT - 20); }
+          h.bounces = (h.bounces ?? 0) - 1;
+        }
+      }
+    }
     const distance = Math.hypot(h.x - w.x, h.y - w.y);
     const prev = h.closest;
     h.closest = Math.min(prev, distance);
-    if (distance < h.radius + 12) {
+    const collides = h.kind === "crate"
+      ? Math.hypot(w.x - clamp(w.x, h.x - h.radius, h.x + h.radius), w.y - clamp(w.y, h.y - h.radius, h.y + h.radius)) < 12
+      : distance < h.radius + 12;
+    if (collides) {
       w.status = "lost";
       w.hitBy = h.kind;
       w.event++;

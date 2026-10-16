@@ -25,9 +25,9 @@ export type OutfitId = (typeof outfits)[number]["id"];
 export function readOutfit(value: string | null): OutfitId {
   return outfits.find((outfit) => outfit.id === value)?.id ?? "classic";
 }
-export function survivalBadge(seconds: number) {
+export function survivalBadge(seconds: number, arena: "compound" | "market" = "compound") {
   if (seconds >= 60) return "CERTIFIED LEGEND";
   if (seconds >= 40) return "DODGE MASTER";
   if (seconds >= 20) return "QUICK FEET";
-  return "COMPOUND ROOKIE";
+  return arena === "market" ? "MARKET ROOKIE" : "COMPOUND ROOKIE";
 }

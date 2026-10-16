@@ -11,3 +11,5 @@ These original bitmap assets were created with the built-in image-generation too
 Prompt direction shared across the set: match the concept board's premium hand-painted 2D cartoon treatment, bold navy outlines, dimensional cel shading, warm highlights, saturated colours; no celebrities, third-party logos, UI labels, or embedded text.
 
 The title is a vector design made from the bundled Luckiest Guy font. Button faces, reaction bursts, HUD, and all controls are live UI, not a flattened screenshot. The gameplay courtyard remains a separate overhead background so movement and collision coordinates stay consistent.
+
+- `market.jpg`: generated using the courtyard as a style reference; overhead Ghanaian market, colourful awnings and produce baskets confined to the perimeter, clear sandy playfield, no people, moving hazards, text or UI. Runtime image is 720 × 1080 JPEG. Tomatoes and crates are live SVG sprites with matching collision shapes.

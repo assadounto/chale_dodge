@@ -1,4 +1,5 @@
 import React from "react";
+import type { HazardKind } from "./engine";
 import { AnimatedHero } from "./AnimatedHero";
 import type { HeroPose } from "./animation";
 import { Image, View } from "react-native";
@@ -66,7 +67,7 @@ export function Obstacle({
   size = 44,
   angle = 0,
 }: {
-  kind: "tyre" | "slipper" | "ball";
+  kind: HazardKind;
   size?: number;
   angle?: number;
 }) {
@@ -89,8 +90,22 @@ export function Obstacle({
           <Stop offset="1" stopColor="#f37b23" />
         </RadialGradient>
       </Defs>
-      <G rotation={angle} origin="25,25">
-        {kind === "tyre" ? (
+      <G rotation={kind === "crate" ? 0 : angle} origin="25,25">
+        {kind === "tomato" ? (
+          <>
+            <Circle cx="25" cy="28" r="16" fill="#ef433b" stroke="#792630" strokeWidth="3" />
+            <Path d="M14 25Q14 17 23 17" stroke="#ffb394" strokeWidth="4" strokeLinecap="round" fill="none" />
+            <Path d="M25 17L14 12L22 12L25 5L29 12L38 11L31 18L33 23L25 20L18 23Z" fill="#60ad42" stroke="#28572c" strokeWidth="2" />
+          </>
+        ) : kind === "crate" ? (
+          <>
+            <Path d="M3 3H47V47H3Z" fill="#b87538" stroke="#482d27" strokeWidth="3" />
+            <Path d="M5 16H45M5 32H45" stroke="#744127" strokeWidth="3" />
+            <Path d="M6 6L44 44M44 6L6 44" stroke="#efbd73" strokeWidth="7" />
+            <Path d="M6 6H44V44H6Z" fill="none" stroke="#ffcf8b" strokeWidth="4" />
+            {[8,42].map(x => [8,42].map(y => <Circle key={`${x}-${y}`} cx={x} cy={y} r="1.5" fill="#482d27" />))}
+          </>
+        ) : kind === "tyre" ? (
           <>
             <Path
               d="M25 3A22 22 0 1 1 24.99 3ZM25 15A10 10 0 1 0 25.01 15Z"

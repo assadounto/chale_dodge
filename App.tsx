@@ -35,6 +35,8 @@ import { StatusBar } from "expo-status-bar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAudioPlayer } from "expo-audio";
 import { outfits, OutfitId, readOutfit, survivalBadge } from "./src/profile";
+import { arenas, ArenaId, bestKey, readArena } from "./src/arenas";
+import { arenaArt } from "./src/arenaArt";
 import { heroPose } from "./src/animation";
 import { Hero, Obstacle } from "./src/Art";
 import {
@@ -48,7 +50,7 @@ import {
   WIDTH,
   World,
 } from "./src/engine";
-type Screen = "home" | "wardrobe" | "playing" | "paused" | "impact" | "result";
+type Screen = "home" | "arenas" | "wardrobe" | "playing" | "paused" | "impact" | "result";
 const NAVY = "#091d37",
   LIME = "#d5ff48";
 const failures = [
@@ -132,11 +134,14 @@ function Game() {
   const outfit = outfits.find((item) => item.id === outfitId) ?? outfits[0];
   const [screen, setScreen] = useState<Screen>("home");
   const screenRef = useRef<Screen>("home");
-  const [best, setBest] = useState(0),
-    [muted, setMuted] = useState(false),
+  const [arenaId, setArenaId] = useState<ArenaId>("compound");
+  const arena = arenas.find(item => item.id === arenaId) ?? arenas[0];
+  const [bests, setBests] = useState<Record<ArenaId, number>>({ compound: 0, market: 0 });
+  const best = bests[arenaId];
+  const [muted, setMuted] = useState(false),
     [ready, setReady] = useState(false),
     [storageError, setStorageError] = useState(false);
-  const bestRef = useRef(0),
+  const bestRef = useRef<Record<ArenaId, number>>({ compound: 0, market: 0 }),
     mutedRef = useRef(false),
     anchor = useRef({ x: 180, y: 450 }),
     held = useRef(new Set<string>());
@@ -161,12 +166,14 @@ function Game() {
   );
   useEffect(() => {
     let live = true;
-    AsyncStorage.multiGet(["chale.best", "chale.muted", "chale.outfit"])
+    AsyncStorage.multiGet(["chale.best", "chale.muted", "chale.outfit", "chale.best.market", "chale.arena"])
       .then((rows) => {
         if (!live) return;
         const saved = Number(rows[0][1] || 0);
-        bestRef.current = Number.isFinite(saved) ? Math.max(0, saved) : 0;
-        setBest(bestRef.current);
+        const market = Number(rows[3][1] || 0);
+        bestRef.current = { compound: Number.isFinite(saved) ? Math.max(0, saved) : 0, market: Number.isFinite(market) ? Math.max(0, market) : 0 };
+        setBests({ ...bestRef.current });
+        setArenaId(readArena(rows[4][1]));
         mutedRef.current = rows[1][1] === "true";
         setMuted(mutedRef.current);
         setOutfitId(readOutfit(rows[2][1]));
@@ -189,6 +196,10 @@ function Game() {
       setStorageError(true),
     );
   }
+  function chooseArena(id: ArenaId) {
+    setArenaId(id);
+    AsyncStorage.setItem("chale.arena", id).catch(() => setStorageError(true));
+  }
   function chooseOutfit(id: OutfitId) {
     setOutfitId(id);
     AsyncStorage.setItem("chale.outfit", id).catch(() => setStorageError(true));
@@ -199,7 +210,7 @@ function Game() {
     return () => clearTimeout(timeout);
   }, [screen]);
   function start() {
-    world.current = createWorld();
+    world.current = createWorld(arenaId);
     setFailure(failures[Math.floor(Math.random() * failures.length)]);
     setSnapshot({
       ...world.current,
@@ -240,10 +251,10 @@ function Game() {
           play(w.status === "playing" ? "dodge" : w.status);
         if (w.status !== "playing") {
           navigate(w.status === "lost" ? "impact" : "result");
-          if (w.elapsed > bestRef.current) {
-            bestRef.current = w.elapsed;
-            setBest(w.elapsed);
-            AsyncStorage.setItem("chale.best", String(w.elapsed)).catch(() =>
+          if (w.elapsed > bestRef.current[w.arena]) {
+            bestRef.current[w.arena] = w.elapsed;
+            setBests({ ...bestRef.current });
+            AsyncStorage.setItem(bestKey(w.arena), String(w.elapsed)).catch(() =>
               setStorageError(true),
             );
           }
@@ -338,7 +349,7 @@ function Game() {
           source={
             screen === "home" || screen === "wardrobe"
               ? require("./assets/art/home-lane.jpg")
-              : require("./assets/courtyard.jpg")
+              : arenaArt[arenaId]
           }
           style={StyleSheet.absoluteFill}
           resizeMode="stretch"
@@ -347,7 +358,7 @@ function Game() {
           pointerEvents="none"
           style={[styles.shade, StyleSheet.absoluteFill]}
         />
-        {screen !== "home" && screen !== "wardrobe" && (
+        {screen !== "home" && screen !== "wardrobe" && screen !== "arenas" && (
           <>
             <View style={styles.hud}>
               <View style={styles.hudPill}>
@@ -357,6 +368,7 @@ function Game() {
                 </Text>
                 <Text style={styles.best}>BEST {best.toFixed(1)}s</Text>
                 <Text style={styles.stage}>{difficulty(w.elapsed)}</Text>
+                <Text style={styles.arenaLabel}>{arena.name.toUpperCase()}</Text>
               </View>
               <Pressable
                 accessibilityRole="button"
@@ -383,6 +395,9 @@ function Game() {
           screen === "impact" ||
           screen === "result") && (
           <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+            {w.hazards.filter(h => h.kind === "crate" && h.age < h.warned).map(h => (
+              <View key={`lane-${h.id}`} testID="crate-lane-warning" style={{ position: "absolute", left: 0, right: 0, top: (h.y - 29) * scale, height: 58 * scale, backgroundColor: "rgba(255,195,40,0.3)", borderTopWidth: 2, borderBottomWidth: 2, borderColor: "#b74d28", borderStyle: "dashed" }} />
+            ))}
             {w.hazards.map((h) => (
               <View
                 key={h.id}
@@ -459,7 +474,7 @@ function Game() {
               <View pointerEvents="none" style={styles.teach}>
                 <Text style={styles.teachText}>KEEP MOVING, CHALE!</Text>
                 <Text style={styles.teachSmall}>
-                  Survive 60 seconds. One hit ends the run.
+                  {arena.hint}
                 </Text>
               </View>
             )}
@@ -475,7 +490,7 @@ function Game() {
               width={Math.min(280, WIDTH * scale - 40, HEIGHT * scale * 0.43)}
             />
             <View style={styles.tag}>
-              <Text style={styles.tagText}>60 SECONDS OF WAHALA</Text>
+              <Text style={styles.tagText}>{arena.name.toUpperCase()}</Text>
             </View>
             <View
               style={[styles.heroShow, { height: Math.min(215, 175 * scale) }]}
@@ -488,7 +503,7 @@ function Game() {
                   transform: [{ rotate: "-25deg" }],
                 }}
               >
-                <Obstacle kind="slipper" size={58 * scale} />
+                <Obstacle kind={arenaId === "market" ? "tomato" : "slipper"} size={58 * scale} />
               </View>
               <Hero
                 size={Math.min(250, 220 * scale)}
@@ -503,7 +518,7 @@ function Game() {
                   transform: [{ rotate: "15deg" }],
                 }}
               >
-                <Obstacle kind="tyre" size={76 * scale} />
+                <Obstacle kind={arenaId === "market" ? "crate" : "tyre"} size={76 * scale} />
               </View>
             </View>
             <View style={styles.homeCard}>
@@ -518,15 +533,38 @@ function Game() {
                   if (ready) start();
                 }}
               />
-              <Button
-                secondary
-                label="CHANGE LOOK"
-                onPress={() => navigate("wardrobe")}
-              />
+              <View style={styles.menuRow}>
+                <View style={{ flex: 1 }}><Button secondary label="ARENAS" onPress={() => navigate("arenas")} /></View>
+                <View style={{ flex: 1 }}><Button secondary label="OUTFITS" onPress={() => navigate("wardrobe")} /></View>
+              </View>
               <Text style={styles.instructions}>
                 Drag to dodge. One hit. Big wahala.
               </Text>
             </View>
+          </ScrollView>
+        )}
+        {screen === "arenas" && (
+          <ScrollView style={[styles.homeScroll, styles.wardrobeScroll]} contentContainerStyle={styles.home} bounces={false}>
+            <Text style={styles.eyebrow}>NEW STREETS. SAME WAHALA.</Text>
+            <ComicHeading text="PICK YOUR ARENA" color="#ffcf48" size={32} />
+            <Text style={styles.resultDescription}>Two arenas. Two best times. Both free.</Text>
+            <View style={{ width: "100%", gap: 12 }}>
+              {arenas.map(item => (
+                <Pressable key={item.id} accessibilityRole="radio" accessibilityLabel={item.name} accessibilityState={{ checked: item.id === arenaId }} aria-checked={item.id === arenaId} onPress={() => chooseArena(item.id)} style={[styles.arenaCard, item.id === arenaId && styles.arenaSelected]}>
+                  <ImageBackground source={arenaArt[item.id]} resizeMode="cover" style={styles.arenaThumbnail}>
+                    <Obstacle kind={item.id === "market" ? "tomato" : "slipper"} size={56} />
+                    <Obstacle kind={item.id === "market" ? "crate" : "tyre"} size={48} />
+                  </ImageBackground>
+                  <View style={styles.arenaCopy}>
+                    <Text style={styles.arenaName}>{item.name.toUpperCase()}</Text>
+                    <Text style={styles.arenaDescription}>{item.description}</Text>
+                    <Text style={styles.outfitStatus}>{item.id === arenaId ? "✓ SELECTED" : "CHOOSE"} · BEST {bests[item.id].toFixed(1)}s</Text>
+                  </View>
+                </Pressable>
+              ))}
+            </View>
+            <Button label="LET’S GO →" onPress={() => { if (ready) start(); }} />
+            <Button secondary label="BACK TO HOME" onPress={() => navigate("home")} />
           </ScrollView>
         )}
         {screen === "wardrobe" && (
@@ -629,8 +667,9 @@ function Game() {
                     ? "Certified dodging legend. Enjoy your victory."
                     : "Shake it off. The next run is yours."}
               </Text>
+              <Text style={styles.eyebrow}>{arena.name.toUpperCase()}</Text>
               {screen === "result" && (
-                <Text style={styles.badge}>{survivalBadge(w.elapsed)}</Text>
+                <Text style={styles.badge}>{survivalBadge(w.elapsed, w.arena)}</Text>
               )}
               {screen === "result" && (
                 <View style={styles.stats}>
@@ -664,7 +703,7 @@ function Game() {
                   label="SHARE MY SCORE"
                   onPress={() => {
                     Share.share({
-                      message: `${survivalBadge(w.elapsed)}! I survived ${w.elapsed.toFixed(1)}s in Chale, Dodge! ${w.dodges} close calls. Can you survive 60 seconds?`,
+                      message: `${survivalBadge(w.elapsed, w.arena)}! I survived ${w.elapsed.toFixed(1)}s in ${arena.name} on Chale, Dodge! ${w.dodges} close calls. Can you survive 60 seconds?`,
                     }).catch(() => {});
                   }}
                 />
@@ -689,6 +728,14 @@ function Game() {
   );
 }
 const styles = StyleSheet.create({
+  menuRow: { flexDirection: "row", gap: 10, width: "100%" },
+  arenaLabel: { color: "#9bdece", fontSize: 9, marginTop: 4, fontFamily: displayFont },
+  arenaCard: { flexDirection: "row", overflow: "hidden", borderRadius: 16, borderWidth: 3, borderColor: "#405771", backgroundColor: "#142e48", minHeight: 144 },
+  arenaSelected: { borderColor: LIME },
+  arenaThumbnail: { width: 92, alignItems: "center", justifyContent: "center" },
+  arenaCopy: { flex: 1, padding: 12, justifyContent: "center", gap: 8 },
+  arenaName: { fontFamily: displayFont, color: "#fff1c5", fontSize: 19 },
+  arenaDescription: { color: "#d2deec", fontSize: 12, lineHeight: 17 },
   safe: {
     flex: 1,
     backgroundColor: NAVY,

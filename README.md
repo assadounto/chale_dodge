@@ -1,6 +1,6 @@
 # Chale, Dodge!
 
-A portrait survival game built with Expo SDK 57, React Native, and TypeScript. Survive 60 seconds in a Ghanaian compound while tyres, slippers, and balls fly across the courtyard.
+A portrait survival game built with Expo SDK 57, React Native, and TypeScript. Survive 60 seconds in Compound Trouble or Market Madness.
 
 ## Run it
 
@@ -36,8 +36,8 @@ npm run web
 - Incoming hazards briefly show a warning at the arena edge before moving.
 - Near misses award 50 points, a reaction caption, and a short original sound.
 - Pause using the top-right button (Escape on desktop). Backgrounding the app automatically pauses play.
-- Use **Change Look** on the home screen to choose Classic Chale, Fresh Teal, or Midnight. All outfits are free cosmetics with the same speed and hitbox.
-- Best survival time, mute preference, and selected outfit are saved on the device. Sharing sends a score message, not a video replay.
+- Use **Outfits** on the home screen to choose Classic Chale, Fresh Teal, or Midnight. All outfits are free cosmetics with the same speed and hitbox.
+- Each arena’s best survival time, selected arena, mute preference, and selected outfit are saved on the device. Sharing sends a score message, not a video replay.
 - A collision freezes the arena for 650ms with a reaction naming the hazard that hit you, then opens the result card.
 - Results award a survival badge: Compound Rookie (under 20s), Quick Feet (20–39.9s), Dodge Master (40–59.9s), or Certified Legend (60s).
 
@@ -69,7 +69,7 @@ Home and result menus scroll on short screens. Arena sizing accounts for device 
 - `assets/courtyard.jpg`: AI-generated courtyard background, created for this game.
 - `assets/audio/`: original synthesized reaction and victory sounds, with no third-party music or meme recordings.
 
-The first prototype uses a JavaScript animation loop and React Native/SVG rendering with bounded hazard counts. Profile on target Android hardware before adding more art, particles, or effects. The UI follows the visual concept boards with illustrated characters, a gold/turquoise outlined title, the bundled Luckiest Guy display font, chunky lime buttons, and comic reaction bursts. Animation uses aligned sprite atlases for all three outfits; the victory loop pauses in the background. Voice reactions, multiple arenas, additional characters, replay video capture, and online leaderboards are future additions.
+The first prototype uses a JavaScript animation loop and React Native/SVG rendering with bounded hazard counts. Profile on target Android hardware before adding more art, particles, or effects. The UI follows the visual concept boards with illustrated characters, a gold/turquoise outlined title, the bundled Luckiest Guy display font, chunky lime buttons, and comic reaction bursts. Animation uses aligned sprite atlases for all three outfits; the victory loop pauses in the background. Voice reactions, additional characters, replay video capture, and online leaderboards are future additions.
 
 ## Android preview build
 
@@ -92,3 +92,11 @@ The rich UI pass was checked through home → outfit selection → countdown →
 ## Animation preview
 
 [Running and victory playback](docs/animation-preview.gif) shows the production atlas frames. Browser checks verified running frame progression, an unchanged frame while paused, the hit pose after collision, and victory frame progression/cleanup in an isolated renderer preview. No new native dependencies were added; the project remains on SDK 57.
+
+## Market Madness
+
+Choose **Arenas → Market Madness → Let’s Go**. Tomatoes rebound twice after entering the playfield; wooden crates cross horizontal lanes with a one-second lane warning. Tyres keep you moving. One hit ends the run, and close calls still trigger reactions and sound. Compound Trouble retains its original rules and saved best time. Both arenas are available immediately and remember separate records.
+
+The market has at most 12 active hazards. Crates use square collision bounds with a circular player; tomatoes use circular collision bounds. Engine checks cover entry, rebound limits, crate corners, warning grace, arena selection fallback and isolated best-time keys.
+
+Browser verification covered arena selection and reload restoration, crate lane warnings, pause/resume, results, saving a new market record without changing the compound record, and a 360 × 640 selector. Screenshots: [arena selector](docs/screenshots/arenas.jpg), [Market Madness](docs/screenshots/market.jpg). Web, Android and iOS bundles export with SDK 57; native-device playtesting remains.
