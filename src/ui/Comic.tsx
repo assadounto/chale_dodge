@@ -17,12 +17,12 @@ export function GameLogo({ width = 280 }: { width?: number }) {
         <Defs>
           <LinearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
             <Stop offset="0" stopColor="#fff08c" />
-            <Stop offset=".5" stopColor="#ffd139" />
+            <Stop offset={0.5} stopColor="#ffd139" />
             <Stop offset="1" stopColor="#ff8b22" />
           </LinearGradient>
           <LinearGradient id="aqua" x1="0" y1="0" x2="0" y2="1">
             <Stop offset="0" stopColor="#a6fff0" />
-            <Stop offset=".5" stopColor="#29e4d6" />
+            <Stop offset={0.5} stopColor="#29e4d6" />
             <Stop offset="1" stopColor="#0798b9" />
           </LinearGradient>
         </Defs>
@@ -76,7 +76,7 @@ export function ButtonFace({ secondary = false }: { secondary?: boolean }) {
           y2="1"
         >
           <Stop offset="0" stopColor={secondary ? "#29456a" : "#f1ff93"} />
-          <Stop offset=".5" stopColor={secondary ? "#172d4d" : "#d4fc3b"} />
+          <Stop offset={0.5} stopColor={secondary ? "#172d4d" : "#d4fc3b"} />
           <Stop offset="1" stopColor={secondary ? "#10203a" : "#aadd13"} />
         </LinearGradient>
       </Defs>
@@ -91,7 +91,7 @@ export function ButtonFace({ secondary = false }: { secondary?: boolean }) {
         stroke={secondary ? "#55769d" : "#faffce"}
         strokeWidth="3"
         strokeLinecap="round"
-        opacity=".8"
+        opacity={0.8}
       />
     </Svg>
   );

@@ -61,19 +61,19 @@ export function Obstacle({
   return (
     <Svg width={size} height={size} viewBox="0 0 50 50">
       <Defs>
-        <RadialGradient id="rubber" cx=".35" cy=".25" r=".8">
+        <RadialGradient id="rubber" cx={0.35} cy={0.25} r={0.8}>
           <Stop offset="0" stopColor="#657183" />
-          <Stop offset=".6" stopColor="#263141" />
+          <Stop offset={0.6} stopColor="#263141" />
           <Stop offset="1" stopColor="#101b2b" />
         </RadialGradient>
         <LinearGradient id="slipper" x1="0" y1="0" x2="1" y2="1">
           <Stop offset="0" stopColor="#83efff" />
-          <Stop offset=".5" stopColor="#189acb" />
+          <Stop offset={0.5} stopColor="#189acb" />
           <Stop offset="1" stopColor="#14517e" />
         </LinearGradient>
-        <RadialGradient id="ball" cx=".3" cy=".25" r=".8">
+        <RadialGradient id="ball" cx={0.3} cy={0.25} r={0.8}>
           <Stop offset="0" stopColor="#fff1a3" />
-          <Stop offset=".6" stopColor="#ffcb3b" />
+          <Stop offset={0.6} stopColor="#ffcb3b" />
           <Stop offset="1" stopColor="#f37b23" />
         </RadialGradient>
       </Defs>
@@ -107,7 +107,7 @@ export function Obstacle({
               stroke="#b0bed0"
               strokeWidth="2"
               strokeLinecap="round"
-              opacity=".65"
+              opacity={0.65}
             />
           </>
         ) : kind === "slipper" ? (
