@@ -26,6 +26,7 @@ import {
 import { StatusBar } from "expo-status-bar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAudioPlayer } from "expo-audio";
+import { outfits, OutfitId, readOutfit, survivalBadge } from "./src/profile";
 import { Hero, Obstacle } from "./src/Art";
 import {
   aim,
@@ -38,7 +39,7 @@ import {
   WIDTH,
   World,
 } from "./src/engine";
-type Screen = "home" | "playing" | "paused" | "result";
+type Screen = "home" | "wardrobe" | "playing" | "paused" | "impact" | "result";
 const NAVY = "#101f35",
   LIME = "#d5ff48";
 const failures = [
@@ -93,6 +94,8 @@ function Game() {
   const world = useRef(createWorld());
   const [w, setSnapshot] = useState<World>(createWorld);
   const [failure, setFailure] = useState(failures[0]);
+  const [outfitId, setOutfitId] = useState<OutfitId>("classic");
+  const outfit = outfits.find((item) => item.id === outfitId) ?? outfits[0];
   const [screen, setScreen] = useState<Screen>("home");
   const screenRef = useRef<Screen>("home");
   const [best, setBest] = useState(0),
@@ -124,7 +127,7 @@ function Game() {
   );
   useEffect(() => {
     let live = true;
-    AsyncStorage.multiGet(["chale.best", "chale.muted"])
+    AsyncStorage.multiGet(["chale.best", "chale.muted", "chale.outfit"])
       .then((rows) => {
         if (!live) return;
         const saved = Number(rows[0][1] || 0);
@@ -132,6 +135,7 @@ function Game() {
         setBest(bestRef.current);
         mutedRef.current = rows[1][1] === "true";
         setMuted(mutedRef.current);
+        setOutfitId(readOutfit(rows[2][1]));
       })
       .catch(() => {
         if (live) setStorageError(true);
@@ -151,6 +155,15 @@ function Game() {
       setStorageError(true),
     );
   }
+  function chooseOutfit(id: OutfitId) {
+    setOutfitId(id);
+    AsyncStorage.setItem("chale.outfit", id).catch(() => setStorageError(true));
+  }
+  useEffect(() => {
+    if (screen !== "impact") return;
+    const timeout = setTimeout(() => navigate("result"), 650);
+    return () => clearTimeout(timeout);
+  }, [screen]);
   function start() {
     world.current = createWorld();
     setFailure(failures[Math.floor(Math.random() * failures.length)]);
@@ -192,7 +205,7 @@ function Game() {
         if (w.event !== event)
           play(w.status === "playing" ? "dodge" : w.status);
         if (w.status !== "playing") {
-          navigate("result");
+          navigate(w.status === "lost" ? "impact" : "result");
           if (w.elapsed > bestRef.current) {
             bestRef.current = w.elapsed;
             setBest(w.elapsed);
@@ -296,7 +309,7 @@ function Game() {
           pointerEvents="none"
           style={[styles.shade, StyleSheet.absoluteFill]}
         />
-        {screen !== "home" && (
+        {screen !== "home" && screen !== "wardrobe" && (
           <>
             <View style={styles.hud}>
               <View style={styles.hudPill}>
@@ -329,6 +342,7 @@ function Game() {
         )}
         {(screen === "playing" ||
           screen === "paused" ||
+          screen === "impact" ||
           screen === "result") && (
           <View pointerEvents="none" style={StyleSheet.absoluteFill}>
             {w.hazards.map((h) => (
@@ -365,6 +379,8 @@ function Game() {
               }}
             >
               <Hero
+                shirt={outfit.shirt}
+                shorts={outfit.shorts}
                 stride={
                   w.moving && w.status === "playing"
                     ? Math.sin(w.distance / 9)
@@ -431,9 +447,18 @@ function Game() {
             </Text>
             <View style={styles.heroShow}>
               <Obstacle kind="slipper" size={54} />
-              <Hero size={150} />
+              <Hero size={130} shirt={outfit.shirt} shorts={outfit.shorts} />
               <Obstacle kind="tyre" size={64} />
             </View>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => navigate("wardrobe")}
+              style={styles.changeLook}
+            >
+              <Text style={styles.changeLookText}>
+                {outfit.name.toUpperCase()} · CHANGE LOOK
+              </Text>
+            </Pressable>
             <View style={styles.homeCard}>
               <Text style={styles.bestLabel}>YOUR PERSONAL BEST</Text>
               <Text style={styles.bestNumber}>
@@ -456,6 +481,60 @@ function Game() {
             </Text>
           </ScrollView>
         )}
+        {screen === "wardrobe" && (
+          <ScrollView
+            style={styles.homeScroll}
+            contentContainerStyle={styles.home}
+            bounces={false}
+          >
+            <Text style={styles.eyebrow}>SAME COURAGE. DIFFERENT DRIP.</Text>
+            <Text style={styles.resultTitle}>PICK YOUR LOOK</Text>
+            <Text style={styles.resultDescription}>
+              Every outfit is free. All have the same speed.
+            </Text>
+            <View style={styles.outfitRow}>
+              {outfits.map((item) => (
+                <Pressable
+                  key={item.id}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: item.id === outfitId }}
+                  accessibilityLabel={item.name}
+                  onPress={() => chooseOutfit(item.id)}
+                  style={[
+                    styles.outfitCard,
+                    item.id === outfitId && styles.outfitSelected,
+                  ]}
+                >
+                  <Hero size={72} shirt={item.shirt} shorts={item.shorts} />
+                  <Text style={styles.outfitName}>{item.name}</Text>
+                  <Text style={styles.outfitStatus}>
+                    {item.id === outfitId ? "SELECTED" : "CHOOSE"}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+            <Text style={styles.resultDescription}>{outfit.description}</Text>
+            <Button
+              label="PLAY IN THIS LOOK →"
+              onPress={() => {
+                if (ready) start();
+              }}
+            />
+            <Button
+              secondary
+              label="BACK TO HOME"
+              onPress={() => navigate("home")}
+            />
+          </ScrollView>
+        )}
+        {screen === "impact" && (
+          <View pointerEvents="none" style={styles.impact}>
+            <Text style={styles.impactTitle}>EII!</Text>
+            <Text style={styles.impactSubtitle}>
+              THE {w.hitBy?.toUpperCase()} GOT YOU.
+            </Text>
+          </View>
+        )}
         {(screen === "paused" || screen === "result") && (
           <ScrollView
             style={styles.overlayScroll}
@@ -471,6 +550,8 @@ function Game() {
                     : "WELL… THAT HAPPENED."}
               </Text>
               <Hero
+                shirt={outfit.shirt}
+                shorts={outfit.shorts}
                 size={105}
                 mood={screen === "result" && !won ? "shock" : "happy"}
               />
@@ -488,6 +569,9 @@ function Game() {
                     ? "Certified dodging legend. Enjoy your victory."
                     : "Shake it off. The next run is yours."}
               </Text>
+              {screen === "result" && (
+                <Text style={styles.badge}>{survivalBadge(w.elapsed)}</Text>
+              )}
               {screen === "result" && (
                 <View style={styles.stats}>
                   <View>
@@ -520,7 +604,7 @@ function Game() {
                   label="SHARE MY SCORE"
                   onPress={() => {
                     Share.share({
-                      message: `I survived ${w.elapsed.toFixed(1)}s in Chale, Dodge! ${w.dodges} close calls. Can you survive 60 seconds?`,
+                      message: `${survivalBadge(w.elapsed)}! I survived ${w.elapsed.toFixed(1)}s in Chale, Dodge! ${w.dodges} close calls. Can you survive 60 seconds?`,
                     }).catch(() => {});
                   }}
                 />
@@ -538,7 +622,7 @@ function Game() {
       </View>
       <Text style={styles.footer}>
         {storageError
-          ? "Best score is available for this session only."
+          ? "Some preferences could not be saved on this device."
           : "SMALL ESCAPES. BIG ENERGY."}
       </Text>
     </SafeAreaView>
@@ -843,6 +927,70 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   homeLink: { color: "#b7c9dc", fontSize: 10, fontWeight: "800" },
+  changeLook: { paddingVertical: 12, paddingHorizontal: 10, marginBottom: 4 },
+  changeLookText: {
+    color: LIME,
+    fontSize: 10,
+    fontWeight: "900",
+    textAlign: "center",
+  },
+  outfitRow: {
+    flexDirection: "row",
+    width: "100%",
+    gap: 6,
+    marginVertical: 18,
+  },
+  outfitCard: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 15,
+    paddingHorizontal: 3,
+    borderRadius: 16,
+    backgroundColor: NAVY,
+    borderWidth: 2,
+    borderColor: "#455c72",
+  },
+  outfitSelected: { borderColor: LIME, backgroundColor: "#263e43" },
+  outfitName: {
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: "800",
+    textAlign: "center",
+    marginTop: 8,
+  },
+  outfitStatus: { color: LIME, fontSize: 8, fontWeight: "900", marginTop: 8 },
+  impact: {
+    ...StyleSheet.absoluteFill,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(100,25,20,.3)",
+    zIndex: 4,
+  },
+  impactTitle: {
+    fontSize: 76,
+    fontWeight: "900",
+    color: "#fff1c2",
+    transform: [{ rotate: "-9deg" }],
+  },
+  impactSubtitle: {
+    fontSize: 12,
+    color: "#fff",
+    fontWeight: "900",
+    backgroundColor: NAVY,
+    padding: 10,
+    borderRadius: 10,
+  },
+  badge: {
+    color: LIME,
+    fontWeight: "900",
+    fontSize: 11,
+    borderWidth: 1,
+    borderColor: "#6c8858",
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 18,
+    marginBottom: 15,
+  },
   footer: {
     color: "#8da2b8",
     fontSize: 8,

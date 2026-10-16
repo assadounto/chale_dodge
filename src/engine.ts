@@ -30,6 +30,7 @@ export type World = {
   dodges: number;
   score: number;
   status: "playing" | "lost" | "won";
+  hitBy: Hazard["kind"] | null;
   reaction: string;
   reactionUntil: number;
   event: number;
@@ -53,6 +54,7 @@ export function createWorld(): World {
     dodges: 0,
     score: 0,
     status: "playing",
+    hitBy: null,
     reaction: "",
     reactionUntil: 0,
     event: 0,
@@ -120,6 +122,7 @@ export function step(w: World, delta: number, random = Math.random) {
     h.closest = Math.min(prev, distance);
     if (distance < h.radius + 12) {
       w.status = "lost";
+      w.hitBy = h.kind;
       w.event++;
       break;
     }

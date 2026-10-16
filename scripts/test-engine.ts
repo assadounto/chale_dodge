@@ -1,3 +1,4 @@
+import { readOutfit, survivalBadge } from "../src/profile";
 import assert from "node:assert/strict";
 import { createWorld, step, aim, DURATION, difficulty } from "../src/engine";
 function runningWorld() {
@@ -47,6 +48,7 @@ hit.hazards.push({
 });
 step(hit, 0.01);
 assert.equal(hit.status, "lost");
+assert.equal(hit.hitBy, "ball");
 const win = runningWorld();
 win.elapsed = DURATION - 0.01;
 win.spawnIn = 10;
@@ -73,6 +75,16 @@ step(dodge, 0.04);
 assert.equal(dodge.dodges, 1);
 step(dodge, 0.04);
 assert.equal(dodge.dodges, 1);
+
+// Saved settings may come from older builds or a damaged local value.
+assert.equal(readOutfit(null), "classic");
+assert.equal(readOutfit("removed-outfit"), "classic");
+assert.equal(readOutfit("midnight"), "midnight");
+assert.equal(survivalBadge(19.9), "COMPOUND ROOKIE");
+assert.equal(survivalBadge(20), "QUICK FEET");
+assert.equal(survivalBadge(40), "DODGE MASTER");
+assert.equal(survivalBadge(60), "CERTIFIED LEGEND");
+
 console.log(
-  "Engine checks passed: movement bounds, collision, victory, terminal state, near-miss scoring, countdown, animation, difficulty stages.",
+  "Checks passed: game rules, hit cause, saved outfit fallback, and survival badge thresholds.",
 );

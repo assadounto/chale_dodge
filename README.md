@@ -36,7 +36,10 @@ npm run web
 - Incoming hazards briefly show a warning at the arena edge before moving.
 - Near misses award 50 points, a reaction caption, and a short original sound.
 - Pause using the top-right button (Escape on desktop). Backgrounding the app automatically pauses play.
-- Best survival time and mute preference are saved on the device. Sharing sends a score message, not a video replay.
+- Use **Change Look** on the home screen to choose Classic Chale, Fresh Teal, or Midnight. All outfits are free cosmetics with the same speed and hitbox.
+- Best survival time, mute preference, and selected outfit are saved on the device. Sharing sends a score message, not a video replay.
+- A collision freezes the arena for 650ms with a reaction naming the hazard that hit you, then opens the result card.
+- Results award a survival badge: Compound Rookie (under 20s), Quick Feet (20–39.9s), Dodge Master (40–59.9s), or Certified Legend (60s).
 
 ## Checks
 
@@ -57,10 +60,11 @@ Home and result menus scroll on short screens. Arena sizing accounts for device 
 - `App.tsx`: game lifecycle, input, home, pause, results, storage, audio, and sharing.
 - `src/engine.ts`: renderer-independent game rules in a fixed 360 × 600 coordinate space.
 - `src/Art.tsx`: original scalable SVG character and obstacle art.
+- `src/profile.ts`: outfit definitions, saved-selection validation, and survival badges.
 - `assets/courtyard.jpg`: AI-generated courtyard background, created for this game.
 - `assets/audio/`: original synthesized reaction and victory sounds, with no third-party music or meme recordings.
 
-The first prototype uses a JavaScript animation loop and React Native/SVG rendering with bounded hazard counts. Profile on target Android hardware before adding more art, particles, or effects. The visual concept boards are direction references; this build uses simpler original vector characters. Voice reactions, multiple arenas, character selection, replay video capture, and online leaderboards are future additions.
+The first prototype uses a JavaScript animation loop and React Native/SVG rendering with bounded hazard counts. Profile on target Android hardware before adding more art, particles, or effects. The visual concept boards are direction references; this build uses simpler original vector characters. Voice reactions, multiple arenas, additional characters, replay video capture, and online leaderboards are future additions.
 
 ## Android preview build
 

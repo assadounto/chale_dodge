@@ -4,8 +4,12 @@ export function Hero({
   size = 72,
   mood = "happy",
   stride = 0,
+  shirt = "#ffda3d",
+  shorts = "#244b83",
 }: {
   stride?: number;
+  shirt?: string;
+  shorts?: string;
   size?: number;
   mood?: "happy" | "shock";
 }) {
@@ -16,7 +20,7 @@ export function Hero({
       <G transform={`translate(0 ${-Math.abs(stride) * 2})`}>
         <Path
           d={`M29 59L${25 + swing} 73L${17 + swing} 79M49 59L${54 - swing} 73L${64 - swing} 78`}
-          stroke="#182d48"
+          stroke={shorts}
           strokeWidth="12"
           strokeLinecap="round"
         />
@@ -34,7 +38,7 @@ export function Hero({
         />
         <Path
           d="M29 34L50 34L57 60Q40 68 23 60Z"
-          fill="#ffda3d"
+          fill={shirt}
           stroke="#182638"
           strokeWidth="3"
         />
