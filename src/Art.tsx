@@ -3,63 +3,68 @@ import Svg, { Ellipse, Circle, Path, G } from "react-native-svg";
 export function Hero({
   size = 72,
   mood = "happy",
+  stride = 0,
 }: {
+  stride?: number;
   size?: number;
   mood?: "happy" | "shock";
 }) {
+  const swing = stride * 7;
   return (
     <Svg width={size} height={size} viewBox="0 0 80 88">
       <Ellipse cx="40" cy="81" rx="24" ry="5" fill="#152338" opacity=".18" />
-      <Path
-        d="M29 59L25 75L17 79M49 59L54 75L64 78"
-        stroke="#182d48"
-        strokeWidth="12"
-        strokeLinecap="round"
-      />
-      <Path
-        d="M22 76L15 81M58 77L66 81"
-        stroke="#fff5df"
-        strokeWidth="8"
-        strokeLinecap="round"
-      />
-      <Path
-        d="M26 39L14 53M54 39L65 50"
-        stroke="#9d532d"
-        strokeWidth="9"
-        strokeLinecap="round"
-      />
-      <Path
-        d="M29 34L50 34L57 60Q40 68 23 60Z"
-        fill="#ffda3d"
-        stroke="#182638"
-        strokeWidth="3"
-      />
-      <Circle
-        cx="40"
-        cy="24"
-        r="18"
-        fill="#a95e34"
-        stroke="#182638"
-        strokeWidth="2"
-      />
-      <Path
-        d="M21 24Q16 8 26 7Q27 0 35 5Q43 -2 48 5Q61 2 60 15L56 25L52 16Q35 23 26 15Z"
-        fill="#172233"
-      />
-      <Ellipse cx="33" cy="24" rx="4" ry="5" fill="white" />
-      <Ellipse cx="47" cy="24" rx="4" ry="5" fill="white" />
-      <Circle cx="34" cy="25" r="2" fill="#132137" />
-      <Circle cx="46" cy="25" r="2" fill="#132137" />
-      {mood === "shock" ? (
-        <Ellipse cx="40" cy="35" rx="5" ry="7" fill="#381c25" />
-      ) : (
+      <G transform={`translate(0 ${-Math.abs(stride) * 2})`}>
         <Path
-          d="M31 32Q40 47 50 31Q40 35 31 32"
-          fill="white"
-          stroke="#45242a"
+          d={`M29 59L${25 + swing} 73L${17 + swing} 79M49 59L${54 - swing} 73L${64 - swing} 78`}
+          stroke="#182d48"
+          strokeWidth="12"
+          strokeLinecap="round"
+        />
+        <Path
+          d={`M${22 + swing} 76L${15 + swing} 81M${58 - swing} 77L${66 - swing} 81`}
+          stroke="#fff5df"
+          strokeWidth="8"
+          strokeLinecap="round"
+        />
+        <Path
+          d={`M26 39L${14 - swing} ${53 - Math.abs(swing)}M54 39L${65 + swing} ${50 - Math.abs(swing)}`}
+          stroke="#9d532d"
+          strokeWidth="9"
+          strokeLinecap="round"
+        />
+        <Path
+          d="M29 34L50 34L57 60Q40 68 23 60Z"
+          fill="#ffda3d"
+          stroke="#182638"
+          strokeWidth="3"
+        />
+        <Circle
+          cx="40"
+          cy="24"
+          r="18"
+          fill="#a95e34"
+          stroke="#182638"
           strokeWidth="2"
         />
-      )}
+        <Path
+          d="M21 24Q16 8 26 7Q27 0 35 5Q43 -2 48 5Q61 2 60 15L56 25L52 16Q35 23 26 15Z"
+          fill="#172233"
+        />
+        <Ellipse cx="33" cy="24" rx="4" ry="5" fill="white" />
+        <Ellipse cx="47" cy="24" rx="4" ry="5" fill="white" />
+        <Circle cx="34" cy="25" r="2" fill="#132137" />
+        <Circle cx="46" cy="25" r="2" fill="#132137" />
+        {mood === "shock" ? (
+          <Ellipse cx="40" cy="35" rx="5" ry="7" fill="#381c25" />
+        ) : (
+          <Path
+            d="M31 32Q40 47 50 31Q40 35 31 32"
+            fill="white"
+            stroke="#45242a"
+            strokeWidth="2"
+          />
+        )}
+      </G>
     </Svg>
   );
 }

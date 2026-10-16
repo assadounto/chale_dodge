@@ -20,7 +20,10 @@ npm run web
 ## Controls and rules
 
 - Drag anywhere in the arena to move the character relative to your finger. Desktop also supports arrow keys / WASD.
+- A three-second ready countdown precedes every run; no hazards spawn and the timer stays at zero until it ends.
 - Survive 60 seconds. One collision ends the run.
+- The HUD marks Warm-up (0–20s), Full Wahala (20–45s), and Final Stretch (45–60s). Speed and spawn frequency increase continuously.
+- The character faces the direction of travel and animates its stride when moving.
 - Incoming hazards briefly show a warning at the arena edge before moving.
 - Near misses award 50 points, a reaction caption, and a short original sound.
 - Pause using the top-right button (Escape on desktop). Backgrounding the app automatically pauses play.
@@ -35,7 +38,9 @@ npm test
 npm run export:web
 ```
 
-The deterministic engine checks cover movement bounds, collisions, victory, terminal-state behaviour, and one-time near-miss rewards.
+The deterministic engine checks cover movement bounds, collisions, victory, terminal-state behaviour, one-time near-miss rewards, the countdown, animation state, and difficulty-stage boundaries.
+
+Home and result menus scroll on short screens. Arena sizing accounts for device safe-area insets. The animation loop stops in menus and while paused.
 
 ## Structure
 

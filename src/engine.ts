@@ -20,6 +20,10 @@ export type World = {
   targetX: number;
   targetY: number;
   elapsed: number;
+  readyFor: number;
+  distance: number;
+  moving: boolean;
+  facing: number;
   hazards: Hazard[];
   spawnIn: number;
   nextId: number;
@@ -39,6 +43,10 @@ export function createWorld(): World {
     targetX: 180,
     targetY: 450,
     elapsed: 0,
+    readyFor: 3,
+    distance: 0,
+    moving: false,
+    facing: 1,
     hazards: [],
     spawnIn: 1,
     nextId: 0,
@@ -79,11 +87,20 @@ function spawn(w: World, random: () => number) {
 export function step(w: World, delta: number, random = Math.random) {
   if (w.status !== "playing") return;
   const dt = clamp(delta, 0, 0.04);
+  if (w.readyFor > 0) {
+    w.readyFor = Math.max(0, w.readyFor - dt);
+    w.targetX = w.x;
+    w.targetY = w.y;
+    return;
+  }
   w.elapsed = Math.min(DURATION, w.elapsed + dt);
   const dx = w.targetX - w.x,
     dy = w.targetY - w.y,
     d = Math.hypot(dx, dy),
     move = Math.min(d, 340 * dt);
+  w.moving = move > 0.1;
+  w.distance += move;
+  if (Math.abs(dx) > 0.1) w.facing = dx < 0 ? -1 : 1;
   if (d > 0) {
     w.x += (dx / d) * move;
     w.y += (dy / d) * move;
@@ -124,4 +141,12 @@ export function step(w: World, delta: number, random = Math.random) {
     w.status = "won";
     w.event++;
   }
+}
+
+export function difficulty(elapsed: number) {
+  return elapsed < 20
+    ? "WARM-UP"
+    : elapsed < 45
+      ? "FULL WAHALA"
+      : "FINAL STRETCH";
 }

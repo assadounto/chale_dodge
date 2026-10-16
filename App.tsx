@@ -12,12 +12,17 @@ import {
   Platform,
   Pressable,
   Share,
+  ScrollView,
   StyleSheet,
   Text,
   View,
   useWindowDimensions,
 } from "react-native";
-import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaProvider,
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAudioPlayer } from "expo-audio";
@@ -26,6 +31,7 @@ import {
   aim,
   clamp,
   createWorld,
+  difficulty,
   DURATION,
   HEIGHT,
   step,
@@ -37,7 +43,7 @@ const NAVY = "#101f35",
   LIME = "#d5ff48";
 const failures = [
   "YOU HAD ONE JOB!",
-  "THE SLIPPER HAD A PLAN.",
+  "THE WAHALA HAD A PLAN.",
   "YOUR CONFIDENCE WAS THE PROBLEM.",
   "CHALE… WHAT WAS THAT?",
 ];
@@ -75,7 +81,15 @@ export default function App() {
 }
 function Game() {
   const { width, height } = useWindowDimensions();
-  const scale = Math.min((width - 24) / WIDTH, (height - 105) / HEIGHT, 1.3);
+  const insets = useSafeAreaInsets();
+  const scale = Math.max(
+    0.25,
+    Math.min(
+      (width - insets.left - insets.right - 24) / WIDTH,
+      (height - insets.top - insets.bottom - 105) / HEIGHT,
+      1.3,
+    ),
+  );
   const world = useRef(createWorld());
   const [w, setSnapshot] = useState<World>(createWorld);
   const [failure, setFailure] = useState(failures[0]);
@@ -153,6 +167,8 @@ function Game() {
     return () => sub.remove();
   }, []);
   useEffect(() => {
+    // Menus and paused games do not need an animation loop.
+    if (screen !== "playing") return;
     let last = 0,
       id = 0;
     const tick = (now: number) => {
@@ -194,7 +210,7 @@ function Game() {
     };
     id = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(id);
-  }, [play]);
+  }, [play, screen]);
   useEffect(() => {
     if (Platform.OS !== "web") return;
     const down = (e: KeyboardEvent) => {
@@ -289,6 +305,7 @@ function Game() {
                   <Text style={styles.unit}> / 60s</Text>
                 </Text>
                 <Text style={styles.best}>BEST {best.toFixed(1)}s</Text>
+                <Text style={styles.stage}>{difficulty(w.elapsed)}</Text>
               </View>
               <Pressable
                 accessibilityRole="button"
@@ -327,7 +344,8 @@ function Game() {
                     ((h.age < h.warned ? clamp(h.y, 115, HEIGHT - 35) : h.y) -
                       25) *
                     scale,
-                  opacity: h.age < h.warned ? 0.45 : 1,
+                  opacity:
+                    h.age < h.warned ? 0.45 + Math.sin(h.age * 22) * 0.25 : 1,
                 }}
               >
                 <Obstacle kind={h.kind} size={50 * scale} angle={h.age * 200} />
@@ -343,9 +361,15 @@ function Game() {
                 position: "absolute",
                 left: (w.x - 30) * scale,
                 top: (w.y - 40) * scale,
+                transform: [{ scaleX: w.facing }],
               }}
             >
               <Hero
+                stride={
+                  w.moving && w.status === "playing"
+                    ? Math.sin(w.distance / 9)
+                    : 0
+                }
                 size={60 * scale}
                 mood={w.status === "lost" ? "shock" : "happy"}
               />
@@ -364,13 +388,22 @@ function Game() {
                 {Platform.OS === "web" ? " · OR USE ARROW KEYS" : ""}
               </Text>
             </View>
-            {w.reactionUntil > w.elapsed && (
+            {w.readyFor > 0 && (
+              <View pointerEvents="none" style={styles.countdown}>
+                <Text style={styles.countdownLabel}>READY, CHALE?</Text>
+                <Text style={styles.countdownNumber}>
+                  {Math.ceil(w.readyFor)}
+                </Text>
+                <Text style={styles.countdownHint}>Drag anywhere to move</Text>
+              </View>
+            )}
+            {w.readyFor === 0 && w.reactionUntil > w.elapsed && (
               <View pointerEvents="none" style={styles.reaction}>
                 <Text style={styles.reactionText}>{w.reaction}</Text>
                 <Text style={styles.bonus}>+50</Text>
               </View>
             )}
-            {w.elapsed < 3 && (
+            {w.readyFor === 0 && w.elapsed < 1.5 && (
               <View pointerEvents="none" style={styles.teach}>
                 <Text style={styles.teachText}>KEEP MOVING, CHALE!</Text>
                 <Text style={styles.teachSmall}>
@@ -381,7 +414,11 @@ function Game() {
           </>
         )}
         {screen === "home" && (
-          <View style={styles.home}>
+          <ScrollView
+            style={styles.homeScroll}
+            contentContainerStyle={styles.home}
+            bounces={false}
+          >
             <View style={styles.tag}>
               <Text style={styles.tagText}>60 SECONDS OF WAHALA</Text>
             </View>
@@ -417,10 +454,14 @@ function Game() {
             <Text style={styles.offline}>
               MADE OF COURAGE. AND QUESTIONABLE DECISIONS.
             </Text>
-          </View>
+          </ScrollView>
         )}
         {(screen === "paused" || screen === "result") && (
-          <View style={styles.overlay}>
+          <ScrollView
+            style={styles.overlayScroll}
+            contentContainerStyle={styles.overlay}
+            bounces={false}
+          >
             <View style={styles.modal}>
               <Text style={styles.eyebrow}>
                 {screen === "paused"
@@ -492,7 +533,7 @@ function Game() {
                 <Text style={styles.homeLink}>BACK TO HOME</Text>
               </Pressable>
             </View>
-          </View>
+          </ScrollView>
         )}
       </View>
       <Text style={styles.footer}>
@@ -561,6 +602,32 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  stage: {
+    color: "#b8d4e0",
+    fontSize: 8,
+    fontWeight: "800",
+    letterSpacing: 1,
+    marginTop: 5,
+  },
+  countdown: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: "rgba(13,30,48,.3)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  countdownLabel: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "900",
+    letterSpacing: 2,
+  },
+  countdownNumber: {
+    color: LIME,
+    fontSize: 108,
+    fontWeight: "900",
+    lineHeight: 125,
+  },
+  countdownHint: { color: "#fff", fontSize: 13, fontWeight: "700" },
   pauseText: { fontSize: 25, fontWeight: "900", color: "#fff" },
   progress: {
     position: "absolute",
@@ -625,9 +692,12 @@ const styles = StyleSheet.create({
     fontSize: 17,
   },
   teachSmall: { color: "#fff", fontSize: 10, marginTop: 7 },
-  home: {
-    ...{ position: "absolute", top: 0, bottom: 0, left: 0, right: 0 },
+  homeScroll: {
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(11,27,46,.67)",
+  },
+  home: {
+    flexGrow: 1,
     padding: 22,
     alignItems: "center",
     justifyContent: "center",
@@ -707,9 +777,13 @@ const styles = StyleSheet.create({
     marginTop: 15,
     textAlign: "center",
   },
-  overlay: {
-    ...{ position: "absolute", top: 0, bottom: 0, left: 0, right: 0 },
+  overlayScroll: {
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(7,17,33,.78)",
+    zIndex: 5,
+  },
+  overlay: {
+    flexGrow: 1,
     alignItems: "center",
     justifyContent: "center",
     padding: 20,
