@@ -23,6 +23,14 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
+import { useFonts } from "expo-font";
+import {
+  ButtonFace,
+  ComicBurst,
+  ComicHeading,
+  GameLogo,
+  displayFont,
+} from "./src/ui/Comic";
 import { StatusBar } from "expo-status-bar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAudioPlayer } from "expo-audio";
@@ -40,7 +48,7 @@ import {
   World,
 } from "./src/engine";
 type Screen = "home" | "wardrobe" | "playing" | "paused" | "impact" | "result";
-const NAVY = "#101f35",
+const NAVY = "#091d37",
   LIME = "#d5ff48";
 const failures = [
   "YOU HAD ONE JOB!",
@@ -64,16 +72,41 @@ function Button({
       style={({ pressed }) => [
         styles.button,
         secondary && styles.secondary,
-        pressed && { opacity: 0.75, transform: [{ scale: 0.98 }] },
+        pressed && { transform: [{ translateY: 3 }, { scale: 0.99 }] },
       ]}
     >
-      <Text style={[styles.buttonText, secondary && { color: "#fff" }]}>
+      <ButtonFace secondary={secondary} />
+      <Text
+        style={[
+          styles.buttonText,
+          { fontSize: label.length > 18 ? 18 : secondary ? 19 : 28 },
+          secondary && { color: "#fff" },
+        ]}
+      >
         {label}
       </Text>
     </Pressable>
   );
 }
 export default function App() {
+  const [loaded, error] = useFonts({
+    ChaleDisplay: require("./assets/fonts/LuckiestGuy.ttf"),
+  });
+  if (!loaded && !error)
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: NAVY,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Text style={{ color: LIME, fontSize: 24, fontWeight: "900" }}>
+          CHALE, DODGE!
+        </Text>
+      </View>
+    );
   return (
     <SafeAreaProvider>
       <Game />
@@ -301,7 +334,11 @@ function Game() {
         style={[styles.arena, { width: WIDTH * scale, height: HEIGHT * scale }]}
       >
         <ImageBackground
-          source={require("./assets/courtyard.jpg")}
+          source={
+            screen === "home" || screen === "wardrobe"
+              ? require("./assets/art/home-lane.jpg")
+              : require("./assets/courtyard.jpg")
+          }
           style={StyleSheet.absoluteFill}
           resizeMode="stretch"
         />
@@ -373,8 +410,8 @@ function Game() {
             <View
               style={{
                 position: "absolute",
-                left: (w.x - 30) * scale,
-                top: (w.y - 40) * scale,
+                left: (w.x - 37.5) * scale,
+                top: (w.y - 48) * scale,
                 transform: [{ scaleX: w.facing }],
               }}
             >
@@ -386,7 +423,7 @@ function Game() {
                     ? Math.sin(w.distance / 9)
                     : 0
                 }
-                size={60 * scale}
+                size={75 * scale}
                 mood={w.status === "lost" ? "shock" : "happy"}
               />
             </View>
@@ -415,8 +452,7 @@ function Game() {
             )}
             {w.readyFor === 0 && w.reactionUntil > w.elapsed && (
               <View pointerEvents="none" style={styles.reaction}>
-                <Text style={styles.reactionText}>{w.reaction}</Text>
-                <Text style={styles.bonus}>+50</Text>
+                <ComicBurst text={w.reaction} bonus="+50" />
               </View>
             )}
             {w.readyFor === 0 && w.elapsed < 1.5 && (
@@ -435,60 +471,76 @@ function Game() {
             contentContainerStyle={styles.home}
             bounces={false}
           >
+            <GameLogo
+              width={Math.min(280, WIDTH * scale - 40, HEIGHT * scale * 0.43)}
+            />
             <View style={styles.tag}>
               <Text style={styles.tagText}>60 SECONDS OF WAHALA</Text>
             </View>
-            <Text style={styles.title}>
-              CHALE,{"\n"}
-              <Text style={{ color: LIME }}>DODGE!</Text>
-            </Text>
-            <Text style={styles.subtitle}>
-              Stay alive. Escape trouble.{"\n"}Laugh. Run it back.
-            </Text>
-            <View style={styles.heroShow}>
-              <Obstacle kind="slipper" size={54} />
-              <Hero size={130} shirt={outfit.shirt} shorts={outfit.shorts} />
-              <Obstacle kind="tyre" size={64} />
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => navigate("wardrobe")}
-              style={styles.changeLook}
+            <View
+              style={[styles.heroShow, { height: Math.min(215, 175 * scale) }]}
             >
-              <Text style={styles.changeLookText}>
-                {outfit.name.toUpperCase()} · CHANGE LOOK
-              </Text>
-            </Pressable>
+              <View
+                style={{
+                  position: "absolute",
+                  left: 5,
+                  top: 15,
+                  transform: [{ rotate: "-25deg" }],
+                }}
+              >
+                <Obstacle kind="slipper" size={58 * scale} />
+              </View>
+              <Hero
+                size={Math.min(250, 220 * scale)}
+                shirt={outfit.shirt}
+                shorts={outfit.shorts}
+              />
+              <View
+                style={{
+                  position: "absolute",
+                  right: 0,
+                  bottom: 0,
+                  transform: [{ rotate: "15deg" }],
+                }}
+              >
+                <Obstacle kind="tyre" size={76 * scale} />
+              </View>
+            </View>
             <View style={styles.homeCard}>
-              <Text style={styles.bestLabel}>YOUR PERSONAL BEST</Text>
-              <Text style={styles.bestNumber}>
-                {best.toFixed(1)}
-                <Text style={styles.unit}> seconds</Text>
-              </Text>
+              <View style={styles.bestPill}>
+                <Text style={styles.homeBest}>
+                  ★ BEST RUN: {best.toFixed(1)}s
+                </Text>
+              </View>
               <Button
-                label={ready ? "LET’S PLAY  →" : "LOADING…"}
+                label={ready ? "▶  PLAY" : "LOADING…"}
                 onPress={() => {
                   if (ready) start();
                 }}
               />
+              <Button
+                secondary
+                label="CHANGE LOOK"
+                onPress={() => navigate("wardrobe")}
+              />
               <Text style={styles.instructions}>
-                Drag to move · Dodge every obstacle{"\n"}A narrow escape earns
-                +50 points
+                Drag to dodge. One hit. Big wahala.
               </Text>
             </View>
-            <Text style={styles.offline}>
-              MADE OF COURAGE. AND QUESTIONABLE DECISIONS.
-            </Text>
           </ScrollView>
         )}
         {screen === "wardrobe" && (
           <ScrollView
-            style={styles.homeScroll}
+            style={[styles.homeScroll, styles.wardrobeScroll]}
             contentContainerStyle={styles.home}
             bounces={false}
           >
             <Text style={styles.eyebrow}>SAME COURAGE. DIFFERENT DRIP.</Text>
-            <Text style={styles.resultTitle}>PICK YOUR LOOK</Text>
+            <ComicHeading
+              text="CHOOSE YOUR\nLEGEND"
+              color="#35e9db"
+              size={34}
+            />
             <Text style={styles.resultDescription}>
               Every outfit is free. All have the same speed.
             </Text>
@@ -497,7 +549,8 @@ function Game() {
                 <Pressable
                   key={item.id}
                   accessibilityRole="radio"
-                  accessibilityState={{ selected: item.id === outfitId }}
+                  accessibilityState={{ checked: item.id === outfitId }}
+                  aria-checked={item.id === outfitId}
                   accessibilityLabel={item.name}
                   onPress={() => chooseOutfit(item.id)}
                   style={[
@@ -505,7 +558,7 @@ function Game() {
                     item.id === outfitId && styles.outfitSelected,
                   ]}
                 >
-                  <Hero size={72} shirt={item.shirt} shorts={item.shorts} />
+                  <Hero size={90} shirt={item.shirt} shorts={item.shorts} />
                   <Text style={styles.outfitName}>{item.name}</Text>
                   <Text style={styles.outfitStatus}>
                     {item.id === outfitId ? "SELECTED" : "CHOOSE"}
@@ -529,7 +582,7 @@ function Game() {
         )}
         {screen === "impact" && (
           <View pointerEvents="none" style={styles.impact}>
-            <Text style={styles.impactTitle}>EII!</Text>
+            <ComicBurst text="EII!" />
             <Text style={styles.impactSubtitle}>
               THE {w.hitBy?.toUpperCase()} GOT YOU.
             </Text>
@@ -552,16 +605,22 @@ function Game() {
               <Hero
                 shirt={outfit.shirt}
                 shorts={outfit.shorts}
-                size={105}
+                portrait={screen === "result" && !won}
+                size={screen === "paused" ? 120 : 180}
                 mood={screen === "result" && !won ? "shock" : "happy"}
               />
-              <Text style={styles.resultTitle}>
-                {screen === "paused"
-                  ? "SMALL BREAK?"
-                  : won
-                    ? "YOU SURVIVED!"
-                    : failure}
-              </Text>
+              <ComicHeading
+                text={
+                  screen === "paused"
+                    ? "SMALL BREAK?"
+                    : won
+                      ? "YOU SURVIVED!"
+                      : failure
+                }
+                color={won ? "#ffce38" : "#fff2cf"}
+                size={screen === "paused" ? 30 : 32}
+              />
+
               <Text style={styles.resultDescription}>
                 {screen === "paused"
                   ? "The wahala can wait."
@@ -644,20 +703,30 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  wordmark: { fontWeight: "900", fontSize: 17, color: "#fff" },
+  wordmark: {
+    fontFamily: displayFont,
+    fontWeight: "400",
+    fontSize: 17,
+    color: "#fff",
+  },
   sound: {
     padding: 9,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: "#3c5067",
   },
-  small: { fontSize: 9, fontWeight: "800", color: "#c4d1df" },
+  small: {
+    fontSize: 9,
+    fontFamily: displayFont,
+    fontWeight: "400",
+    color: "#c4d1df",
+  },
   arena: {
     overflow: "hidden",
-    borderRadius: 24,
+    borderRadius: 26,
     backgroundColor: "#e9b38b",
-    borderWidth: 2,
-    borderColor: "#42516a",
+    borderWidth: 3,
+    borderColor: "#6b89a3",
   },
   shade: { backgroundColor: "rgba(18,28,42,.06)" },
   hud: {
@@ -675,9 +744,20 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 14,
   },
-  time: { fontSize: 26, fontWeight: "900", color: "#fff" },
+  time: {
+    fontSize: 26,
+    fontFamily: displayFont,
+    fontWeight: "400",
+    color: "#fff",
+  },
   unit: { fontSize: 13, color: "#b4c6d8" },
-  best: { color: "#ffda55", fontSize: 11, fontWeight: "800", marginTop: 3 },
+  best: {
+    color: "#ffda55",
+    fontSize: 11,
+    fontFamily: displayFont,
+    fontWeight: "400",
+    marginTop: 3,
+  },
   pause: {
     width: 44,
     height: 44,
@@ -689,7 +769,8 @@ const styles = StyleSheet.create({
   stage: {
     color: "#b8d4e0",
     fontSize: 8,
-    fontWeight: "800",
+    fontFamily: displayFont,
+    fontWeight: "400",
     letterSpacing: 1,
     marginTop: 5,
   },
@@ -702,17 +783,24 @@ const styles = StyleSheet.create({
   countdownLabel: {
     color: "#fff",
     fontSize: 18,
-    fontWeight: "900",
+    fontFamily: displayFont,
+    fontWeight: "400",
     letterSpacing: 2,
   },
   countdownNumber: {
     color: LIME,
     fontSize: 108,
-    fontWeight: "900",
+    fontFamily: displayFont,
+    fontWeight: "400",
     lineHeight: 125,
   },
   countdownHint: { color: "#fff", fontSize: 13, fontWeight: "700" },
-  pauseText: { fontSize: 25, fontWeight: "900", color: "#fff" },
+  pauseText: {
+    fontSize: 25,
+    fontFamily: displayFont,
+    fontWeight: "400",
+    color: "#fff",
+  },
   progress: {
     position: "absolute",
     bottom: 0,
@@ -728,7 +816,13 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 14,
   },
-  combo: { color: LIME, textAlign: "center", fontSize: 12, fontWeight: "900" },
+  combo: {
+    color: LIME,
+    textAlign: "center",
+    fontSize: 12,
+    fontFamily: displayFont,
+    fontWeight: "400",
+  },
   hint: {
     color: "#d4dfeb",
     fontSize: 8,
@@ -741,23 +835,24 @@ const styles = StyleSheet.create({
     top: -18,
     right: 0,
     color: "#cf3327",
-    fontWeight: "900",
+    fontFamily: displayFont,
+    fontWeight: "400",
   },
   reaction: {
     position: "absolute",
-    top: "24%",
+    top: "22%",
     alignSelf: "center",
-    backgroundColor: "#fff6de",
-    borderWidth: 3,
-    borderColor: NAVY,
-    padding: 14,
-    borderRadius: 18,
-    transform: [{ rotate: "-5deg" }],
   },
-  reactionText: { fontSize: 21, fontWeight: "900", color: NAVY },
+  reactionText: {
+    fontSize: 21,
+    fontFamily: displayFont,
+    fontWeight: "400",
+    color: NAVY,
+  },
   bonus: {
     fontSize: 28,
-    fontWeight: "900",
+    fontFamily: displayFont,
+    fontWeight: "400",
     color: "#467000",
     textAlign: "center",
   },
@@ -771,32 +866,41 @@ const styles = StyleSheet.create({
   },
   teachText: {
     color: LIME,
-    fontWeight: "900",
+    fontFamily: displayFont,
+    fontWeight: "400",
     textAlign: "center",
     fontSize: 17,
   },
   teachSmall: { color: "#fff", fontSize: 10, marginTop: 7 },
+  wardrobeScroll: { backgroundColor: "rgba(6,23,45,.94)" },
   homeScroll: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(11,27,46,.67)",
+    backgroundColor: "rgba(11,27,46,.05)",
   },
   home: {
     flexGrow: 1,
-    padding: 22,
+    padding: 16,
     alignItems: "center",
     justifyContent: "center",
   },
   tag: {
-    backgroundColor: "#2a4550",
+    backgroundColor: "#10243d",
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 7,
   },
-  tagText: { color: LIME, fontSize: 9, fontWeight: "900", letterSpacing: 2 },
+  tagText: {
+    color: "#fff3d7",
+    fontSize: 11,
+    fontFamily: displayFont,
+    fontWeight: "400",
+    letterSpacing: 2,
+  },
   title: {
     color: "#fff2cf",
     fontSize: 54,
-    fontWeight: "900",
+    fontFamily: displayFont,
+    fontWeight: "400",
     lineHeight: 55,
     textAlign: "center",
     marginTop: 12,
@@ -810,46 +914,65 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   heroShow: { flexDirection: "row", alignItems: "center", marginVertical: 8 },
-  homeCard: {
-    backgroundColor: NAVY,
-    width: "100%",
-    padding: 16,
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: "#4d6277",
+  bestPill: {
+    alignSelf: "center",
+    backgroundColor: "#10233a",
+    paddingVertical: 6,
+    paddingHorizontal: 15,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: "#b5cadd",
+    marginBottom: 3,
   },
+  homeBest: { color: "#ffe26a", fontFamily: displayFont, fontSize: 13 },
+  homeCard: { width: "100%", padding: 0, marginTop: 6 },
   bestLabel: {
     color: "#9cacc2",
     fontSize: 9,
-    fontWeight: "800",
+    fontFamily: displayFont,
+    fontWeight: "400",
     letterSpacing: 2,
     textAlign: "center",
   },
   bestNumber: {
     color: "#fff",
     fontSize: 27,
-    fontWeight: "900",
+    fontFamily: displayFont,
+    fontWeight: "400",
     textAlign: "center",
     marginVertical: 7,
   },
   button: {
     backgroundColor: LIME,
-    paddingVertical: 16,
-    paddingHorizontal: 14,
-    borderRadius: 15,
+    paddingVertical: 15,
+    paddingHorizontal: 12,
+    borderRadius: 23,
     alignItems: "center",
+    justifyContent: "center",
     width: "100%",
     marginTop: 8,
+    borderWidth: 3,
+    borderBottomWidth: 7,
+    borderColor: "#06172d",
+    overflow: "hidden",
   },
-  buttonText: { color: NAVY, fontSize: 15, fontWeight: "900" },
+  buttonText: {
+    color: NAVY,
+    fontSize: 15,
+    fontFamily: displayFont,
+    fontWeight: "400",
+  },
   secondary: {
-    backgroundColor: "#243b55",
-    borderWidth: 1,
-    borderColor: "#536881",
+    backgroundColor: "#10243f",
+    borderColor: "#07162c",
   },
   instructions: {
-    color: "#bfcede",
-    fontSize: 10,
+    color: "#fff7df",
+    backgroundColor: "rgba(9,29,55,.8)",
+    borderRadius: 12,
+    padding: 5,
+    fontFamily: displayFont,
+    fontSize: 11,
     textAlign: "center",
     lineHeight: 17,
     marginTop: 12,
@@ -875,9 +998,10 @@ const styles = StyleSheet.create({
   },
   modal: {
     backgroundColor: NAVY,
-    borderWidth: 2,
-    borderColor: "#4e6984",
-    borderRadius: 25,
+    borderWidth: 3,
+    borderBottomWidth: 8,
+    borderColor: "#98b1d4",
+    borderRadius: 28,
     padding: 20,
     alignItems: "center",
     width: "100%",
@@ -885,7 +1009,8 @@ const styles = StyleSheet.create({
   eyebrow: {
     color: "#99acbf",
     fontSize: 8,
-    fontWeight: "800",
+    fontFamily: displayFont,
+    fontWeight: "400",
     letterSpacing: 1.5,
     textAlign: "center",
     marginBottom: 10,
@@ -893,7 +1018,8 @@ const styles = StyleSheet.create({
   resultTitle: {
     color: LIME,
     fontSize: 27,
-    fontWeight: "900",
+    fontFamily: displayFont,
+    fontWeight: "400",
     textAlign: "center",
     marginTop: 4,
   },
@@ -914,24 +1040,32 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   statValue: {
-    fontSize: 20,
+    fontSize: 24,
     color: "#fff",
-    fontWeight: "900",
+    fontFamily: displayFont,
+    fontWeight: "400",
     textAlign: "center",
   },
   statLabel: {
-    fontSize: 7,
+    fontSize: 9,
     color: "#a8bdd0",
-    fontWeight: "800",
+    fontFamily: displayFont,
+    fontWeight: "400",
     marginTop: 5,
     textAlign: "center",
   },
-  homeLink: { color: "#b7c9dc", fontSize: 10, fontWeight: "800" },
+  homeLink: {
+    color: "#b7c9dc",
+    fontSize: 10,
+    fontFamily: displayFont,
+    fontWeight: "400",
+  },
   changeLook: { paddingVertical: 12, paddingHorizontal: 10, marginBottom: 4 },
   changeLookText: {
     color: LIME,
     fontSize: 10,
-    fontWeight: "900",
+    fontFamily: displayFont,
+    fontWeight: "400",
     textAlign: "center",
   },
   outfitRow: {
@@ -954,11 +1088,18 @@ const styles = StyleSheet.create({
   outfitName: {
     color: "#fff",
     fontSize: 10,
-    fontWeight: "800",
+    fontFamily: displayFont,
+    fontWeight: "400",
     textAlign: "center",
     marginTop: 8,
   },
-  outfitStatus: { color: LIME, fontSize: 8, fontWeight: "900", marginTop: 8 },
+  outfitStatus: {
+    color: LIME,
+    fontSize: 8,
+    fontFamily: displayFont,
+    fontWeight: "400",
+    marginTop: 8,
+  },
   impact: {
     ...StyleSheet.absoluteFill,
     alignItems: "center",
@@ -968,21 +1109,24 @@ const styles = StyleSheet.create({
   },
   impactTitle: {
     fontSize: 76,
-    fontWeight: "900",
+    fontFamily: displayFont,
+    fontWeight: "400",
     color: "#fff1c2",
     transform: [{ rotate: "-9deg" }],
   },
   impactSubtitle: {
     fontSize: 12,
     color: "#fff",
-    fontWeight: "900",
+    fontFamily: displayFont,
+    fontWeight: "400",
     backgroundColor: NAVY,
     padding: 10,
     borderRadius: 10,
   },
   badge: {
     color: LIME,
-    fontWeight: "900",
+    fontFamily: displayFont,
+    fontWeight: "400",
     fontSize: 11,
     borderWidth: 1,
     borderColor: "#6c8858",
