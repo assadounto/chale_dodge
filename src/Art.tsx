@@ -1,4 +1,6 @@
 import React from "react";
+import { AnimatedHero } from "./AnimatedHero";
+import type { HeroPose } from "./animation";
 import { Image, View } from "react-native";
 import Svg, {
   Circle,
@@ -12,17 +14,31 @@ import Svg, {
 export function Hero({
   size = 72,
   mood = "happy",
-  stride = 0,
+  motion,
+  distance = 0,
+  seconds = 0,
   shirt = "#ffda3d",
   portrait = false,
 }: {
   size?: number;
   mood?: "happy" | "shock";
-  stride?: number;
+  motion?: HeroPose;
+  distance?: number;
+  seconds?: number;
   shirt?: string;
   shorts?: string;
   portrait?: boolean;
 }) {
+  if (motion && !portrait)
+    return (
+      <AnimatedHero
+        size={size}
+        shirt={shirt}
+        pose={motion}
+        distance={distance}
+        seconds={seconds}
+      />
+    );
   const source =
     portrait && mood === "shock"
       ? require("../assets/art/reaction-shock.png")
@@ -40,10 +56,6 @@ export function Hero({
         style={{
           width: "100%",
           height: "100%",
-          transform: [
-            { translateY: -Math.abs(stride) * 2 },
-            { rotate: `${stride * 4}deg` },
-          ],
         }}
       />
     </View>

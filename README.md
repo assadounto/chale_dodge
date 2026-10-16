@@ -32,7 +32,7 @@ npm run web
 - A three-second ready countdown precedes every run; no hazards spawn and the timer stays at zero until it ends.
 - Survive 60 seconds. One collision ends the run.
 - The HUD marks Warm-up (0–20s), Full Wahala (20–45s), and Final Stretch (45–60s). Speed and spawn frequency increase continuously.
-- The illustrated character faces the direction of travel and bobs/leans while moving.
+- The illustrated character uses an eight-frame running cycle that follows movement distance, plus idle, dodge, hit-recoil, and victory-dance poses.
 - Incoming hazards briefly show a warning at the arena edge before moving.
 - Near misses award 50 points, a reaction caption, and a short original sound.
 - Pause using the top-right button (Escape on desktop). Backgrounding the app automatically pauses play.
@@ -60,6 +60,8 @@ Home and result menus scroll on short screens. Arena sizing accounts for device 
 - `App.tsx`: game lifecycle, input, home, pause, results, storage, audio, and sharing.
 - `src/engine.ts`: renderer-independent game rules in a fixed 360 × 600 coordinate space.
 - `src/Art.tsx`: illustrated character images and shaded SVG obstacles.
+- `src/AnimatedHero.tsx` and `src/animation.ts`: atlas rendering, frame selection, and the victory clock.
+- `assets/animation/`: three sixteen-pose sprite atlases and the frame map.
 - `src/ui/`: comic title paths, gradient button faces, outlined headings, and reaction bursts.
 - `assets/art/`: generated character cutouts, shocked reaction, and home street background.
 - `assets/fonts/`: bundled Luckiest Guy display font and its Apache 2.0 license.
@@ -67,7 +69,7 @@ Home and result menus scroll on short screens. Arena sizing accounts for device 
 - `assets/courtyard.jpg`: AI-generated courtyard background, created for this game.
 - `assets/audio/`: original synthesized reaction and victory sounds, with no third-party music or meme recordings.
 
-The first prototype uses a JavaScript animation loop and React Native/SVG rendering with bounded hazard counts. Profile on target Android hardware before adding more art, particles, or effects. The UI follows the visual concept boards with illustrated characters, a gold/turquoise outlined title, the bundled Luckiest Guy display font, chunky lime buttons, and comic reaction bursts. Character movement currently animates the illustrated cutout with bob/lean, rather than a frame-by-frame run cycle. Voice reactions, multiple arenas, additional characters, replay video capture, and online leaderboards are future additions.
+The first prototype uses a JavaScript animation loop and React Native/SVG rendering with bounded hazard counts. Profile on target Android hardware before adding more art, particles, or effects. The UI follows the visual concept boards with illustrated characters, a gold/turquoise outlined title, the bundled Luckiest Guy display font, chunky lime buttons, and comic reaction bursts. Animation uses aligned sprite atlases for all three outfits; the victory loop pauses in the background. Voice reactions, multiple arenas, additional characters, replay video capture, and online leaderboards are future additions.
 
 ## Android preview build
 
@@ -86,3 +88,7 @@ npx eas-cli@latest build --platform android --profile preview
 Actual browser captures of the implemented interface: [home](docs/screenshots/home.jpg), [outfits](docs/screenshots/outfits.jpg), and [results](docs/screenshots/result.jpg).
 
 The rich UI pass was checked through home → outfit selection → countdown → pause/resume → game over. Saved outfit restoration after reload and Play visibility at 360 × 640 were also verified in the browser. Android/iOS device appearance and performance still need on-device testing.
+
+## Animation preview
+
+[Running and victory playback](docs/animation-preview.gif) shows the production atlas frames. Browser checks verified running frame progression, an unchanged frame while paused, the hit pose after collision, and victory frame progression/cleanup in an isolated renderer preview. No new native dependencies were added; the project remains on SDK 57.

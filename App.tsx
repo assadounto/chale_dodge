@@ -35,6 +35,7 @@ import { StatusBar } from "expo-status-bar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAudioPlayer } from "expo-audio";
 import { outfits, OutfitId, readOutfit, survivalBadge } from "./src/profile";
+import { heroPose } from "./src/animation";
 import { Hero, Obstacle } from "./src/Art";
 import {
   aim,
@@ -408,6 +409,7 @@ function Game() {
               </View>
             ))}
             <View
+              testID="player-character"
               style={{
                 position: "absolute",
                 left: (w.x - 37.5) * scale,
@@ -418,11 +420,9 @@ function Game() {
               <Hero
                 shirt={outfit.shirt}
                 shorts={outfit.shorts}
-                stride={
-                  w.moving && w.status === "playing"
-                    ? Math.sin(w.distance / 9)
-                    : 0
-                }
+                motion={w.status === "won" ? "idle" : heroPose(w)}
+                distance={w.distance}
+                seconds={w.elapsed}
                 size={75 * scale}
                 mood={w.status === "lost" ? "shock" : "happy"}
               />
@@ -605,6 +605,7 @@ function Game() {
               <Hero
                 shirt={outfit.shirt}
                 shorts={outfit.shorts}
+                motion={screen === "result" && won ? "victory" : undefined}
                 portrait={screen === "result" && !won}
                 size={screen === "paused" ? 120 : 180}
                 mood={screen === "result" && !won ? "shock" : "happy"}

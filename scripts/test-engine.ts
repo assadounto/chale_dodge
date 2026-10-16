@@ -1,4 +1,5 @@
 import { readOutfit, survivalBadge } from "../src/profile";
+import { heroPose, spriteFrame } from "../src/animation";
 import assert from "node:assert/strict";
 import { createWorld, step, aim, DURATION, difficulty } from "../src/engine";
 function runningWorld() {
@@ -49,11 +50,13 @@ hit.hazards.push({
 step(hit, 0.01);
 assert.equal(hit.status, "lost");
 assert.equal(hit.hitBy, "ball");
+assert.equal(heroPose(hit), "hit");
 const win = runningWorld();
 win.elapsed = DURATION - 0.01;
 win.spawnIn = 10;
 step(win, 0.02);
 assert.equal(win.status, "won");
+assert.equal(heroPose(win), "victory");
 const pause = JSON.stringify(win);
 step(win, 0.04);
 assert.equal(JSON.stringify(win), pause);
@@ -73,6 +76,8 @@ dodge.hazards.push({
 });
 step(dodge, 0.04);
 assert.equal(dodge.dodges, 1);
+assert.equal(heroPose(dodge), "dodge");
+assert.ok(dodge.dodgeUntil > dodge.elapsed);
 step(dodge, 0.04);
 assert.equal(dodge.dodges, 1);
 
@@ -85,6 +90,23 @@ assert.equal(survivalBadge(20), "QUICK FEET");
 assert.equal(survivalBadge(40), "DODGE MASTER");
 assert.equal(survivalBadge(60), "CERTIFIED LEGEND");
 
+assert.equal(heroPose(createWorld()), "idle");
+const runner = runningWorld();
+aim(runner, 300, 450);
+step(runner, 0.04);
+assert.equal(heroPose(runner), "run");
+assert.deepEqual(
+  Array.from({ length: 9 }, (_, i) => spriteFrame("run", i * 24)),
+  [0, 1, 2, 3, 4, 5, 6, 7, 0],
+);
+assert.deepEqual(
+  Array.from({ length: 5 }, (_, i) => spriteFrame("victory", 0, i / 8)),
+  [12, 13, 14, 15, 12],
+);
+assert.equal(spriteFrame("idle"), 8);
+assert.equal(spriteFrame("hit"), 11);
+assert.equal(spriteFrame("dodge", 0, 0), 9);
+assert.equal(spriteFrame("dodge", 0, 0.1), 10);
 console.log(
-  "Checks passed: game rules, hit cause, saved outfit fallback, and survival badge thresholds.",
+  "Checks passed: game rules, profiles, pose priority, run frames, and victory loop.",
 );

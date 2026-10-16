@@ -33,6 +33,7 @@ export type World = {
   hitBy: Hazard["kind"] | null;
   reaction: string;
   reactionUntil: number;
+  dodgeUntil: number;
   event: number;
 };
 export const clamp = (v: number, min: number, max: number) =>
@@ -57,6 +58,7 @@ export function createWorld(): World {
     hitBy: null,
     reaction: "",
     reactionUntil: 0,
+    dodgeUntil: 0,
     event: 0,
   };
 }
@@ -133,6 +135,7 @@ export function step(w: World, delta: number, random = Math.random) {
         w.dodges % 3
       ];
       w.reactionUntil = w.elapsed + 1;
+      w.dodgeUntil = w.elapsed + 0.22;
       w.event++;
     }
   }
