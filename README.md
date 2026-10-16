@@ -1,6 +1,6 @@
 # Chale, Dodge!
 
-A portrait survival game built with Expo SDK 58, React Native, and TypeScript. Survive 60 seconds in a Ghanaian compound while tyres, slippers, and balls fly across the courtyard.
+A portrait survival game built with Expo SDK 57, React Native, and TypeScript. Survive 60 seconds in a Ghanaian compound while tyres, slippers, and balls fly across the courtyard.
 
 ## Run it
 
@@ -11,7 +11,16 @@ npm ci
 npm start
 ```
 
-Scan the development QR code with a compatible Expo Go installation. For a native development build, use `npx expo run:android` or `npx expo run:ios` with the appropriate native tooling. Your phone and development computer should be on the same network. For a browser preview:
+This project targets **Expo SDK 57** to match the SDK 57 Expo Go app. Scan the development QR code with that Expo Go installation.
+
+After pulling this compatibility update, stop any old Metro server and reinstall from the updated lockfile:
+
+```sh
+npm ci
+npx expo start --go --clear
+```
+
+Open the new QR code in Expo Go. For a native development build, use `npx expo run:android` or `npx expo run:ios` with the appropriate native tooling. Your phone and development computer should be on the same network. For a browser preview:
 
 ```sh
 npm run web
